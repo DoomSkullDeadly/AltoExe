@@ -1,6 +1,6 @@
 
 prefix = "!" # Prefix used for admin text-based commands
-development_mode = true # Toggles development mode (recommended false for production)
+development_mode = false # Toggles development mode (recommended false for production)
 
 
 [extensions]
@@ -15,6 +15,7 @@ pagination = true
 settings = false
 server = true
 utility = true
+aimlabs = true
 
 
 [spotify]
