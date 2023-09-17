@@ -235,6 +235,8 @@ async def main():
     intents = discord.Intents.default()
     intents.members = True
     intents.message_content = True
+    intents.reactions = True
+    intents.guilds = True
     
     # Instanciate MyClient class with requested intents and loaded config & establish bot connection to Discord
     async with MyClient(intents=intents, config=config) as client:
