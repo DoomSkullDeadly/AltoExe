@@ -16,6 +16,7 @@ settings = false
 server = true
 utility = true
 aimlabs = true
+verify = true
 
 
 [spotify]

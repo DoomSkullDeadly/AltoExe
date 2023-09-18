@@ -5,7 +5,7 @@ import logging
 import json
 
 
-class AimLabs(commands.Cog, name="submit"):
+class AimLabs(commands.Cog):
     def __init__(self, client: discord.Client):
         self.client = client
         self.pagination = self.client.get_cog("EmbedPaginator")
@@ -17,17 +17,25 @@ class AimLabs(commands.Cog, name="submit"):
         self.temp_data = {}
 
     @app_commands.guild_only()
+    @app_commands.checks.has_permissions(administrator=True)
     @app_commands.command(description="pls work")
-    async def channels(self, interaction: discord.Interaction):
-        self.submission_channel = self.client.get_channel(1153051949588041870)
+    async def channels_aim(self, interaction: discord.Interaction, sub: str = None, ver: str = None):
+        if sub is not None:
+            self.submission_channel = self.client.get_channel(int(sub))
+        else:
+            self.submission_channel = self.client.get_channel(1153137254944997406)
         if self.submission_channel is None:
             print("fuck pt.1")
-        self.verification_channel = self.client.get_channel(1153055395259101194)
+        if ver is not None:
+            self.verification_channel = self.client.get_channel(int(ver))
+        else:
+            self.verification_channel = self.client.get_channel(1153136423369703484)
         if self.verification_channel is None:
             print("fuck pt.2")
         await interaction.response.send_message("did it work?", ephemeral=True)
 
     @app_commands.guild_only()
+    @app_commands.checks.has_permissions(administrator=True)
     @app_commands.command(description="Create leaderboard")
     async def create_leaderboard(self, interaction: discord.Interaction, message_id: str = None):
         if message_id is not None:
