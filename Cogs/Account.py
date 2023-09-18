@@ -29,8 +29,9 @@ class AccountCog(commands.Cog, name="Account"):
         
         #** Setup Base Profile Embed With Title & User's Colour **
         ProfileEmbed = discord.Embed(title=interaction.user.display_name+"'s Profile",
-                                     colour=interaction.user.colour)
-        ProfileEmbed.set_thumbnail(url=interaction.user.avatar.url)
+                                     colour=discord.Colour.blue)
+        if interaction.user.avatar is not None:
+            ProfileEmbed.set_thumbnail(url=interaction.user.avatar.url)
 
         #** Try Getting User Object From Player If User Is In VC **
         CurrentUser = None
@@ -80,7 +81,7 @@ class AccountCog(commands.Cog, name="Account"):
             ProfileEmbed.add_field(name="Last Listening Session:", value="N/A")
 
         #** Calculate Total Song Count & Add As Field To Embed **
-        ProfileEmbed.add_field(name="Lifetime Song Count:", value=f"{CurrentUser.metadata['songs']} Songs")
+        ProfileEmbed.add_field(name="Lifetime Song Count:", value=f"{CurrentUser.songs} Songs")
         
         #** Send Profile Embed To User **
         await interaction.response.send_message(embed=ProfileEmbed)
@@ -91,8 +92,9 @@ class AccountCog(commands.Cog, name="Account"):
         
         #** Setup Base History Embed With Title, User's Colour & Profile Picture **
         HistoryEmbed = discord.Embed(title=interaction.user.display_name+"'s Listening History",
-                                     colour=interaction.user.colour)
-        HistoryEmbed.set_thumbnail(url=interaction.user.avatar.url)
+                                     colour=discord.Colour.blue)
+        if interaction.user.avatar is not None:
+            HistoryEmbed.set_thumbnail(url=interaction.user.avatar.url)
         
         #** Try Getting User Object From Player If User Is In VC **
         CurrentUser = None
@@ -179,11 +181,13 @@ class AccountCog(commands.Cog, name="Account"):
                 raise app_commands.CheckFailure("Database")
         
         #** Get Recommendations From Spotify API Through User Class If User Has Listened To At Least One Song **
-        if len(user.history) > 0:
-            tracks = user.getRecommendations()
-            print("Got Recommendations")
+        if user.recommendations['songcount'] > 0:
+            try:
+                tracks = user.getRecommendations()
+            except:
+                await interaction.response.send_message("**An Error Occurred Whilst Fetching Recommendations**!\nIf this error persists, contact `@sam_lolo` on Discord.", ephemeral=True)
         else:
-            raise app_commands.CheckFailure("History")
+            raise app_commands.CheckFailure("Recommendations")
 
         #** Randomly Choose 10 Songs From 50 Recomendations **
         if tracks is not None:
@@ -228,7 +232,7 @@ class AccountCog(commands.Cog, name="Account"):
         
         #** Return Error To User If Failed To Get Recommendations **
         else:
-            await interaction.response.send_message("**An Error Occurred Whilst Fetching Recommendations**!\nIf this error persists, open a ticket in our Discord server:* `/discord`.", ephemeral=True)
+            await interaction.response.send_message("**An Error Occurred Whilst Fetching Recommendations**!\nIf this error persists, contact `@sam_lolo` on Discord.", ephemeral=True)
 
 
     @app_commands.command(description="Deletes your user data where requested from our database.")

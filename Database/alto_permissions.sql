@@ -16,19 +16,22 @@
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
 
 --
--- Table structure for table `users`
+-- Table structure for table `permissions`
 --
 
-DROP TABLE IF EXISTS `users`;
+DROP TABLE IF EXISTS `permissions`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `users` (
-  `DiscordID` varchar(32) NOT NULL,
-  `Songs` int DEFAULT '0',
-  `Created` datetime DEFAULT NULL,
-  `History` int DEFAULT '2',
-  `Public` tinyint DEFAULT '1',
-  PRIMARY KEY (`DiscordID`)
+CREATE TABLE `permissions` (
+  `id` varchar(128) NOT NULL,
+  `Type` varchar(16) NOT NULL,
+  `Server` varchar(128) NOT NULL,
+  `Play` tinyint DEFAULT '1',
+  `Volume` tinyint DEFAULT '1',
+  `Skip` tinyint DEFAULT '1',
+  `Edit Queue` tinyint DEFAULT '1',
+  `Seek` tinyint DEFAULT '1',
+  PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;

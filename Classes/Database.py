@@ -3,8 +3,11 @@
 
 
 import os
+import json
 import logging
+from datetime import datetime
 from mysql.connector import pooling, errors
+from Classes.Server import UserPermissions
 
 
 #!--------------------------------DATABASE OPERATIONS-----------------------------------#
@@ -12,22 +15,30 @@ from mysql.connector import pooling, errors
 
 class Database():
     
-    def __init__(self, pool: str = "main", size: int = 5):
+    def __init__(self, config: dict, pool: str = "main", size: int = 5):
         
         # Setup database logger
         self.logger = logging.getLogger("database")
             
         # Create connection pool for database
-        user = os.environ["DATABASE_USER"]
-        password = os.environ["DATABASE_PASS"]
+        host = config['database']['host']
+        if host == "":
+            host = os.getenv(config['environment']['database_host'], default=None)
+            if host is None:
+                self.logger.warning('"database.host" is not set in config or environment variables!')
+        user = config['database']['username']
+        if user == "":
+            user = os.getenv(config['environment']['database_user'], default=None)
+            if user is None:
+                self.logger.warning('"database.user" is not set in config or environment variables!')
         try:
             self.logger.info(f"Attempting to create new database pool '{pool}' of size {size}")
             self.pool = pooling.MySQLConnectionPool(pool_name = pool,
-                                                                    pool_size = size,
-                                                                    host = "localhost",
-                                                                    database = "alto",
-                                                                    user = user,
-                                                                    password = password)
+                                                    pool_size = size,
+                                                    host = host,
+                                                    database = config['database']['schema'],
+                                                    user = user,
+                                                    password = os.environ[config['environment']['database_password']])
         except errors.DatabaseError as failure:
             self.logger.error(f"Database connection failed with error: {failure}")
             self.connected = False
@@ -42,9 +53,9 @@ class Database():
         
         # Use parameter to keep track of attempts to create new database connection from pool
         del user
-        del password
+        del host
         self.failures = 0
-        self.max_attempts = 3
+        self.max_attempts = config['database']['max_retries']
         
 
     def ensure_connection(self):
@@ -80,33 +91,45 @@ class Database():
             raise ConnectionError(f"Failed to get user data for '{id}' due to missing database connection!")
 
         # Fetch user data from database
-        cursor.execute(f"SELECT * FROM users INNER JOIN recommendations WHERE users.DiscordID = '{id}';")
-        result = cursor.fetchone()
+        cursor.execute(f"SELECT * FROM users WHERE DiscordID = '{id}';")
+        user = cursor.fetchone()
+        cursor.execute(f"SELECT * FROM recommendations WHERE DiscordID = '{id}';")
+        recommendations = cursor.fetchone()
         connection.close()
         self.logger.debug("Connection returned to pool!")
 
         # Format user data if row was found
-        if result is not None:
-            data = {"songs": result[1],
-                    "history": result[3],
-                    "public": result[4],
-                    "created": result[2],
-                    "recommendations": {"songcount": result[6],
-                                        "popularity": [result[7], result[8], result[9]],
-                                        "acousticness": [result[10], result[11], result[12]],
-                                        "danceability": [result[13], result[14], result[15]],
-                                        "energy": [result[16], result[17], result[18]],
-                                        "instrumentalness": [result[19], result[20], result[21]],
-                                        "liveness": [result[22], result[23], result[24]],
-                                        "loudness": [result[25], result[26], result[27]],
-                                        "speechiness": [result[28], result[29], result[30]],
-                                        "valence": [result[31], result[32], result[33]]}}
-            return data
+        if user is not None:
+            data = {"songs": user[1],
+                    "history": user[3],
+                    "public": bool(user[4]),
+                    "created": user[2]}
         else:
-            return None
+            return None  
+        
+        # Add recommendations data if available and return found info
+        if recommendations is not None:
+            data["recommendations"] = {"songcount": recommendations[1],
+                                       "acousticness": recommendations[2],
+                                       "danceability": recommendations[3],
+                                       "duration_ms": recommendations[4],
+                                       "energy": recommendations[5],
+                                       "instrumentalness": recommendations[6],
+                                       "key": recommendations[7],
+                                       "mode": recommendations[8],
+                                       "popularity": recommendations[9],
+                                       "liveness": recommendations[10],
+                                       "loudness": recommendations[11],
+                                       "speechiness": recommendations[12],
+                                       "tempo": recommendations[13],
+                                       "time_signature": recommendations[14],
+                                       "valence": recommendations[15]}
+        else:
+            data['recommendations'] = None
+        return data
         
     
-    def saveUser(self, id: int, user: dict):
+    def saveUser(self, id: int, songs: int, history: int, public: bool, created: datetime):
         
         # Get database connection from pool
         connection, cursor = self.ensure_connection()
@@ -115,7 +138,7 @@ class Database():
             raise ConnectionError(f"Failed to save user data for '{id}' due to missing database connection!")
 
         # Write new data into users table, updating the row if it already exists
-        data = (id, user['songs'], user['created'], user['history'], user['public'])
+        data = (id, songs, created, history, public)
         cursor.execute("REPLACE INTO users VALUES (%s, %s, %s, %s, %s);", data)
         
         # Commit changes and return connection to pool
@@ -134,17 +157,10 @@ class Database():
             raise ConnectionError(f"Failed to save recommendations data for '{id}' due to missing database connection!")
     
         # write user recommendation data to recommendations table (update if already exists)
-        data = (id, recommendations['songcount'], 
-                recommendations['popularity'][0], recommendations['popularity'][1], recommendations['popularity'][2],
-                recommendations['acousticness'][0], recommendations['acousticness'][1], recommendations['acousticness'][2],
-                recommendations['danceability'][0], recommendations['danceability'][1], recommendations['danceability'][2],
-                recommendations['energy'][0], recommendations['energy'][1], recommendations['energy'][2],
-                recommendations['instrumentalness'][0], recommendations['instrumentalness'][1], recommendations['instrumentalness'][2],
-                recommendations['liveness'][0], recommendations['liveness'][1], recommendations['liveness'][2],
-                recommendations['loudness'][0], recommendations['loudness'][1], recommendations['loudness'][2],
-                recommendations['speechiness'][0], recommendations['speechiness'][1], recommendations['speechiness'][2],
-                recommendations['valence'][0], recommendations['valence'][1], recommendations['valence'][2])
-        cursor.execute("REPLACE INTO recommendations VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);", data)
+        data = (id, recommendations['songcount'], recommendations['acousticness'], recommendations['danceability'], recommendations['duration_ms'], recommendations['energy'], 
+                recommendations['instrumentalness'], recommendations['key'], recommendations['mode'], recommendations['popularity'], recommendations['liveness'],
+                recommendations['loudness'], recommendations['speechiness'], recommendations['tempo'], recommendations['time_signature'], recommendations['valence'])
+        cursor.execute("REPLACE INTO recommendations VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);", data)
         
         # Commit changes and return connection to pool
         connection.commit()
@@ -166,7 +182,7 @@ class Database():
                "FROM history "
                "INNER JOIN cache ON history.SongID = cache.uid "
               f"WHERE DiscordID = '{discordID}' "
-               "ORDER BY ListenedAt ASC;")
+               "ORDER BY ListenedAt DESC;")
         cursor.execute(sql)
         result = cursor.fetchall()
         connection.close()
@@ -191,7 +207,6 @@ class Database():
     
     
     def saveHistory(self, discordID: int, history: dict):
-        print("Saving history!")
         
         # Get database connection from pool
         connection, cursor = self.ensure_connection()
@@ -204,7 +219,6 @@ class Database():
         cursor.execute(f"DELETE FROM history WHERE ListenedAt < '{oldest}';")
         cursor.execute("SELECT ROW_COUNT();")
         deletedRows = cursor.fetchone()
-        print(deletedRows)
         if deletedRows is not None:
             deletedRows = deletedRows[0]
     
@@ -335,4 +349,95 @@ class Database():
                 data["colour"] = tuple(result[12])
             else:
                 data["colour"] = None
+        return data
+    
+    
+    def saveServer(self, id: int, volume: dict, voice: list, channels: list, queue: bool, permissions: dict):
+        
+        # Get database connection from pool
+        connection, cursor = self.ensure_connection()
+        if connection is None:
+            self.logger.warning(f"Failed to save server with id '{id}' due to missing database connection!")
+            raise ConnectionError(f"Failed to save server with id '{id}' due to missing database connection!")
+        
+        # Replace current server settings in database
+        sql = f"REPLACE INTO servers (id, Default Volume, Last Volume, Save Queue, Voice Channels, Text Channels, Play, Volume, Skip, Edit Queue, Seek) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);"
+        values = (id, volume['default'], volume['previous'], queue, voice, channels)
+        for i in range(1, 6):
+            if UserPermissions(i) in permissions['default']:
+                values.append(True)
+            else:
+                values.append(False)
+        cursor.execute(sql, values)
+        self.logger.debug(f"Saved server settings for guild id '{id}'")
+        
+        # Save list of dj roles and users for server
+        for user, perms in permissions['users'].items():
+            sql = f"REPLACE INTO permissions (id, Type, Server, Play, Volume, Skip, Edit Queue, Seek) VALUES (%s, %s, %s, %s, %s, %s, %s, %s);"
+            values = (user, "user", id)
+            if UserPermissions(i) in perms:
+                values.append(True)
+            else:
+                values.append(False)
+            cursor.execute(sql, values)
+        for role, perms in permissions['roles'].items():
+            sql = f"REPLACE INTO permissions (id, Type, Server, Play, Volume, Skip, Edit Queue, Seek) VALUES (%s, %s, %s, %s, %s, %s, %s, %s);"
+            values = (role, "role", id)
+            if UserPermissions(i) in perms:
+                values.append(True)
+            else:
+                values.append(False)
+            cursor.execute(sql, values)
+        self.logger.debug(f"Saved permissions for guild id '{id}'")
+        
+        # Commit changes and return connection to pool
+        connection.commit()
+        connection.close()
+        self.logger.debug("Connection returned to pool!")
+        
+        
+    def loadServer(self, id: int):
+        
+        # Get database connection from pool
+        connection, cursor = self.ensure_connection()
+        if connection is None:
+            self.logger.warning(f"Failed to get server settings for id '{id}' due to missing database connection!")
+            raise ConnectionError(f"Failed to get server settings for id '{id}' due to missing database connection!")
+        
+        # Get settings for server table
+        cursor.execute(f"SELECT * FROM servers WHERE id = '{id}';")
+        result = cursor.fetchone()
+        
+        # Format result into dictionary if row found
+        if result is not None:
+            data = {"volume": {
+                        "default": result[1],
+                        "previous": result[2]
+                    },
+                    "voice": json.loads(result[4]),
+                    "channels": json.loads(result[5]),
+                    "queue": bool(result[3]),
+                    "permissions": {
+                        "default": [UserPermissions(x) for x, value in enumerate(result[6:], start=1) if value == 1],
+                        "users": {},
+                        "roles": {}
+                    }}
+        else:
+            return None
+        
+        # Load DJ roles and users from dj table
+        cursor.execute(f"SELECT * FROM permissions WHERE Server = '{id}';")
+        results = cursor.fetchall()
+        for result in results:
+            if result[1] == "user":
+                data['permissions']['users'][result[0]] = [UserPermissions(x) for x, value in enumerate(result[3:], start=1) if value == 1]
+            elif result[1] == "role":
+                data['permissions']['roles'][result[0]] = [UserPermissions(x) for x, value in enumerate(result[3:], start=1) if value == 1]
+            else:
+                self.logger.warning(f"Result found in table 'permissions' with unknown type '{result[1]}'!")
+        
+        # Return connection to available pool
+        print(data)
+        connection.close()
+        self.logger.debug("Connection returned to pool!")
         return data
