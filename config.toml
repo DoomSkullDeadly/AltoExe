@@ -5,7 +5,7 @@ development_mode = false # Toggles development mode (recommended false for produ
 
 [extensions]
 # Define which cogs should be loaded upon startup. Setting the value to false means the cog is ignored.
-account = true
+account = false
 admin = true
 background = true
 errors = true
@@ -77,10 +77,10 @@ console = "INFO"
 # Settings for the status rotation carried out in the background
 enabled = true
 interval = 60   # Measured in Seconds
-messages = [["Playing", "V 1.2"],
-            ["Watching", "/play"],
+messages = [["Playing", "Aimlabs"],
+            ["Watching", "For New Members!"],
             ["Listening", "Music"]]
-default = ["Listening", "Music"] # Used as the status when rotation is disabled
+default = ["Watching", "For New Members!"] # Used as the status when rotation is disabled
 
 
 [welcome]

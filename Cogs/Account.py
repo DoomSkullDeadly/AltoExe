@@ -24,12 +24,12 @@ class AccountCog(commands.Cog, name="Account"):
         self.pagination = self.client.get_cog("EmbedPaginator")
 
  
-    @app_commands.command(description="Displays information about your alto profile.")
+    @app_commands.command(description="Displays your music profile.")
     async def profile(self, interaction: discord.Interaction):
         
         #** Setup Base Profile Embed With Title & User's Colour **
         ProfileEmbed = discord.Embed(title=interaction.user.display_name+"'s Profile",
-                                     colour=discord.Colour.blue())
+                                     colour=discord.Colour.dark_green())
         if interaction.user.avatar is not None:
             ProfileEmbed.set_thumbnail(url=interaction.user.avatar.url)
 
@@ -92,7 +92,7 @@ class AccountCog(commands.Cog, name="Account"):
         
         #** Setup Base History Embed With Title, User's Colour & Profile Picture **
         embed = discord.Embed(title=interaction.user.display_name+"'s Listening History",
-                              colour=discord.Colour.blue())
+                              colour=discord.Colour.dark_green())
         if interaction.user.avatar is not None:
             embed.set_thumbnail(url=interaction.user.avatar.url)
         

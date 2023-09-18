@@ -180,7 +180,7 @@ class AdminCog(commands.Cog, name="Admin"):
         
         #** Format Original Embed **
         embed = discord.Embed(title=f"Debug Information For `{option.title()}`",
-                              colour=discord.Colour.blue())
+                              colour=discord.Colour.dark_green())
         
         #** If Option Is 'Lavalink', Format Embed Description With Current Lavalink Node Info **
         if option.lower() == "lavalink":
