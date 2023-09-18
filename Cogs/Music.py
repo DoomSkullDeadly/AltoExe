@@ -483,7 +483,7 @@ class MusicCog(commands.Cog, name="Music"):
         if player.is_playing:
             queueEmbed = discord.Embed(
                 title = f"Queue For {interaction.user.voice.channel.name}:",
-                colour = discord.Colour.blue())
+                colour = discord.Colour.dark_green())
             if interaction.guild.icon is not None:
                 queueEmbed.set_thumbnail(url=interaction.guild.icon.url)
             

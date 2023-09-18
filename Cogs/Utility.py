@@ -61,7 +61,7 @@ class UtilityCog(commands.Cog, name="Utility"):
             await interaction.response.send_message(f'*The bot has been online for:*\n`{uptime.years} Years, {uptime.months} Months, {uptime.days} Days, {uptime.hours} Hours & {uptime.minutes} Minutes`')
 
 
-    @app_commands.command()
+    #@app_commands.command()
     async def invite(self, interaction: discord.Interaction):
         """
         Displays the bot's Discord invite link.
@@ -74,7 +74,7 @@ class UtilityCog(commands.Cog, name="Utility"):
         """
         #** Create Embed With Invite Information **
         invite = discord.Embed(title="Invite Alto To Your Discord Server!",
-                               colour=discord.Colour.blue(),
+                               colour=discord.Colour.dark_green(),
                                description=f"A whole new way to listen to music awaits you:\n🎶 [Alto | Discord Music](https://discord.com/api/oauth2/authorize?client_id={self.client.application_id}&permissions=414836976704&scope=bot) 🎶")
         invite.set_thumbnail(url=self.client.application.icon)
         await interaction.response.send_message(embed=invite)

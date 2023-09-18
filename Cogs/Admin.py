@@ -50,8 +50,7 @@ class AdminCog(commands.Cog, name="Admin"):
         for member in application.team.members:
             self.admins.append(member.id)
 
-    
-    #{ Check Function To See If User ID Is Bot Admin }
+
     def is_admin():
     
         #** When Called, Check If User Id In List & If So Return True **
@@ -181,7 +180,7 @@ class AdminCog(commands.Cog, name="Admin"):
         
         #** Format Original Embed **
         embed = discord.Embed(title=f"Debug Information For `{option.title()}`",
-                              colour=discord.Colour.blue())
+                              colour=discord.Colour.dark_green())
         
         #** If Option Is 'Lavalink', Format Embed Description With Current Lavalink Node Info **
         if option.lower() == "lavalink":
