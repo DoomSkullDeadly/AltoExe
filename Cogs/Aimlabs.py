@@ -43,14 +43,14 @@ class AimLabs(commands.Cog):
             self.leaderboard_message = await self.submission_channel.fetch_message(message_id)
             await interaction.response.send_message("Set to leaderboard", ephemeral=True)
         else:
-            self.leaderboard_message = await self.submission_channel.send("#__**Leaderboard**__#")
+            self.leaderboard_message = await self.submission_channel.send("# __**Leaderboard**__")
             await interaction.response.send_message("Created leaderboard", ephemeral=True)
 
     async def update_leaderboard(self):
         self.data = {k: v for k, v in sorted(self.data.items(), key=lambda item: item[1]["score"], reverse=True)}
         users = [self.client.get_user(int(user)).mention for user in self.data]
         scores = [self.data[user]["score"] for user in self.data]
-        content = "#__**Leaderboard**__\n{}".format('\n'.join('{} - {}'.format(*t) for t in zip(users, scores)))
+        content = "# __**Leaderboard**__\n{}".format('\n'.join('{} - {}'.format(*t) for t in zip(users, scores)))
         print(content)
         await self.leaderboard_message.edit(content=content)
 
